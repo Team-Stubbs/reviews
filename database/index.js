@@ -19,11 +19,13 @@ let photoSchema = new mongoose.Schema({});
 let colSchema = new mongoose.Schema({});
 let MetaDataSchema = new mongoose.Schema({});
 let MetaSchema = new mongoose.Schema({});
+let metadataSchema = new mongoose.Schema({});
 const Photos = mongoose.model('Photos', photoSchema, 'photos');
 const Review = mongoose.model('Review', reviewSchema, 'reviews');
 const Col = mongoose.model('Col', colSchema, 'col');
 const MetaData = mongoose.model('MetaData', MetaDataSchema, 'metaData');
 const Meta = mongoose.model('Meta', MetaSchema, 'meta');
+const metadata = mongoose.model('meta', metadataSchema, 'metadata');
 
 
-module.exports = {Photos, Review, Col, MetaData, Meta};
+module.exports = {Photos, Review, Col, MetaData, Meta, metadata, dataBase};

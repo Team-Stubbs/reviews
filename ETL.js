@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const {Review, Photos, Col, MetaData, Meta} = require('./database/index.js');
+const { Review, Photos, Col, MetaData, Meta } = require('./database/index.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -16,11 +16,11 @@ const colChecker = (num) => {
 };
 
 const metaDataFinder = (num) => {
-  return MetaData.find({product_id: num});
+  return MetaData.find({ product_id: num });
 };
 
 const metaFinder = (num) => {
-  return Meta.find({characteristic_id: num});
+  return Meta.find({ characteristic_id: num });
 };
 
 const reviewCollector = async _ => {
@@ -30,7 +30,7 @@ const reviewCollector = async _ => {
     // console.log(`ON PRODUCT ID ${i}`);
     const currentReviews = await reviewFinder(i);
     if (currentReviews.length > 0) {
-      let document = { product_id: Object.values(currentReviews[0])[5].product_id, reviews: []};
+      let document = { product_id: Object.values(currentReviews[0])[5].product_id, reviews: [] };
       for (var j = 0; j < currentReviews.length; j++) {
         const currentPhotos = await photoFinder(JSON.parse(JSON.stringify(currentReviews[j])).id);
         if (currentPhotos.length > 0) {
@@ -55,39 +55,54 @@ const reviewCollector = async _ => {
 
 const metaDataCollector = async _ => {
   console.log('started');
-    for(var i = 0; i < 2; i ++) {
-    var finishedMetaData = {};
-    var ratings = {};
+  var result = [];
+  for (var i = 1000009; i < 1000011; i++) {
     const currentProduct = await colChecker(i);
-    var formattedProduct = JSON.parse(JSON.stringify(currentProduct));
-    for(var j = 0; j < formattedProduct.reviews.length; j ++) {
-      let row = formattedProduct.reviews[j];
-      if(ratings[row.rating.toString()]) {
-        ratings[row.rating.toString()]++;
-      } else {
-        ratings[row.rating.toString()] = 1;
-      }
-    }
     const currentMetaData = await metaDataFinder(i);
-    var formmattedMeta = JSON.parse(JSON.stringify(currentMetaData));
-    var characteristics = {};
-    for(var k = 0; k < formmattedMeta.length; k ++) {
-      const currentCharacteristics = await metaFinder(formmattedMeta[k].id);
-      var formattedCharacteristics = JSON.parse(JSON.stringify(currentCharacteristics));
-      var total = 0;
-      for(var l = 0; l < formattedCharacteristics.length; l ++) {
-        total += formattedCharacteristics[l].value;
-        // characteristics.formmattedMeta[k].name = {id : formmattedMeta[k].id, value: currentCharacteristics.value}
+    var formattedProduct = JSON.parse(JSON.stringify(currentProduct));
+    var formattedMeta = JSON.parse(JSON.stringify(currentMetaData));
+    if (formattedProduct !== null) {
+      // console.log(`THIS IS PRODUCT ID ${i}`);
+      var finishedMetaData = {};
+      var ratings = {};
+      var recommended = { "0": 0, "1": 0 };
+      for (var j = 0; j < formattedProduct.reviews.length; j++) {
+        let row = formattedProduct.reviews[j];
+        if (ratings[row.rating.toString()]) {
+          ratings[row.rating.toString()]++;
+        } else {
+          ratings[row.rating.toString()] = 1;
+        }
+        if (row.recommend === "true" || row.recommend === 1) {
+          recommended["1"]++;
+        } else if (row.recommend === "false" || row.recommend === 0) {
+          recommended["0"]++;
+        }
       }
-      currentCharacteristics.formmattedMeta[k].name = {id: formmattedMeta[k].id, value: total/currentCharacteristics}
+      finishedMetaData.ratings = ratings;
+      finishedMetaData.recommended = recommended;
+      finishedMetaData.product_id = i;
+      if (formattedMeta.length > 0) {
+        var characteristics = {};
+        for (var k = 0; k < formattedMeta.length; k++) {
+          const currentCharacteristics = await metaFinder(formattedMeta[k].id);
+          var formattedCharacteristics = JSON.parse(JSON.stringify(currentCharacteristics));
+          if (formattedCharacteristics.length > 0) {
+            characteristics[formattedMeta[k].name] = [...formattedCharacteristics];
+          }
+        }
+        finishedMetaData.characteristics = characteristics;
+      }
+      result.push(finishedMetaData);
     }
   }
-  finishedMetaData.ratings = ratings;
-  finishedMetaData.characteristics = characteristics;
-  console.log(finishedMetaData);
-};
+  fs.writeFile('./data.json', JSON.stringify(result), 'utf-8', function (err) {
+    if (err) throw err
+    console.log('Done!');
+  })
+}
 
-metaDataCollector();
+// metaDataCollector();
 
 // const photoCollector = async _ => {
 //   const allProducts = await reviewCollector();
