@@ -3,9 +3,11 @@ const app = express();
 const port = 4001;
 const bodyParser = require('body-parser');
 app.use(bodyParser.json());
-const { findProductById } = require('../database/queries.js');
+const { findProductById, findMetaByProductId, updateHelpfulByReviewId, postReviewByProductId } = require('../database/queries.js');
 const { Review, Photos, Col, MetaData, Meta } = require('../database/index.js');
 const mongoose = require('mongoose');
+const fs = require('fs');
+
 app.get('/', (req, res) => {
   res.send("hello there");
 });
@@ -33,64 +35,51 @@ app.get('/reviews', (req, res) => {
     })
 });
 
-const colChecker = (num) => {
-  return Col.findOne({ product_id: num });
-};
+app.get('/reviews/meta', (req, res) => {
+  let { product_id } = req.query;
+  findMetaByProductId(Number(product_id))
+  .then((metaData) => {
+    res.send(metaData);
+  })
+  .catch((err) => {
+    console.log(err);
+    res.status(400).send();
+  })
+});
 
-const metaDataFinder = (num) => {
-  return MetaData.find({ product_id: num });
-};
+app.put('/reviews/helpful', (req, res) => {
+  let { review_id } = req.query;
+  updateHelpfulByReviewId(Number(review_id))
+  .then((data) => {
+    res.send(data);
+  })
+  .catch((err) => {
+    console.log(err);
+    res.status(400).send();
+  })
+});
 
-const metaFinder = (num) => {
-  return Meta.find({ characteristic_id: num });
-};
+app.post('/reviews', (req, res) => {
+  // let { query } = req,
+  //     rating = query.rating || false,
+  //     summary = query.summary || false,
+  //     body = query.body || false,
+  //     recommend = query.recommend || false,
+  //     name = query.name || false,
+  //     email = query.email || false,
+  //     photos = query.photos || false,
+  //     characteristics = query.characteristics || false;
+  let review = req.body;
+  postReviewByProductId(review)
+  .then((data) => {
+    // console.log(data)
+    res.send();
+  })
+  .catch((err) => {
+    consol.log(err);
+  })
+})
 
-const metaDataCollector = async _ => {
-  console.log('started');
-  for (var i = 0; i < 20; i++) {
-    var finishedMetaData = {};
-    var ratings = {};
-    const currentProduct = await colChecker(i);
-    var formattedProduct = JSON.parse(JSON.stringify(currentProduct));
-    if (formattedProduct !== null) {
-      for (var j = 0; j < formattedProduct.reviews.length; j++) {
-        let row = formattedProduct.reviews[j];
-        if (ratings[row.rating.toString()]) {
-          ratings[row.rating.toString()]++;
-        } else {
-          ratings[row.rating.toString()] = 1;
-        }
-      }
-      console.log(ratings, 'THIS IS RATINGS')
-      const currentMetaData = await metaDataFinder(i);
-      var formattedMeta = JSON.parse(JSON.stringify(currentMetaData));
-      if (formattedMeta.length > 0) {
-        console.log(formattedMeta, 'THIS IS FORMATTED DATA');
-        var characteristics = {};
-        for (var k = 0; k < formattedMeta.length; k++) {
-          const currentCharacteristics = await metaFinder(formattedMeta[k].id);
-          var formattedCharacteristics = JSON.parse(JSON.stringify(currentCharacteristics));
-          if(formattedCharacteristics.length > 0) {
-
-            console.log(formattedCharacteristics, "THIS IS THE THING")
-            var total = 0;
-            for (var l = 0; l < formattedCharacteristics.length; l++) {
-              total += formattedCharacteristics[l].value;
-              // characteristics.formattedMeta[k].name = {id : formattedMeta[k].id, value: currentCharacteristics.value}
-            }
-          }
-          console.log(formattedCharacteristics.length)
-          characteristics[formattedMeta[k].name] = { id: formattedMeta[k].id, value: total / formattedCharacteristics.length }
-        }
-        finishedMetaData.ratings = ratings;
-        finishedMetaData.characteristics = characteristics;
-        console.log(finishedMetaData);
-      }
-    }
-  }
-}
-
-metaDataCollector();
 
 app.listen(port, () => console.log('listening'));
 
